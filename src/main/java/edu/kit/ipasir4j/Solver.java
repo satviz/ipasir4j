@@ -14,6 +14,15 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.NoSuchElementException;
 
+/**
+ * A class representing an ipasir solver object.
+ *
+ * It gives access to all ipasir functions that can be called on a solver.
+ *
+ * @apiNote <strong>IMPORTANT!</strong> Before this class can be used or even loaded in any way,
+ * an ipasir implementation must be loaded using {@link System#load(String)} or {@link System#loadLibrary(String)}.
+ * @see Ipasir#init()
+ */
 public final class Solver implements AutoCloseable {
 
     // ipasir functions
@@ -71,6 +80,12 @@ public final class Solver implements AutoCloseable {
     private ResourceScope terminateFunctionScope;
     private ResourceScope learnFunctionScope;
 
+    /**
+     * Create a new solver based on the given solver pointer.
+     *
+     * @param pointer The address of the underlying solver. The value at the address must be a valid solver.
+     * @see Ipasir#init()
+     */
     public Solver(MemoryAddress pointer) {
         this.pointer = pointer;
     }

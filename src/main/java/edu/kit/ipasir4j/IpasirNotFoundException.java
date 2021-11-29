@@ -1,5 +1,8 @@
 package edu.kit.ipasir4j;
 
+/**
+ * An exception thrown to indicate that an ipasir function could not be found.
+ */
 public class IpasirNotFoundException extends RuntimeException {
 
     public IpasirNotFoundException(String functionName) {

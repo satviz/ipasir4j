@@ -103,7 +103,7 @@ public class CallbackProcessor extends AbstractProcessor {
         return new String[] {
                 containingPackage.getQualifiedName().toString(),
                 targetClassName,
-                enclosingType.getSimpleName().toString(),
+                enclosingType.getQualifiedName().toString(),
                 methodDef.getSimpleName().toString(),
                 ((TypeElement) dataType.asElement()).getQualifiedName().toString()
         };
