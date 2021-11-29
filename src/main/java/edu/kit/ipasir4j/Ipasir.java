@@ -7,7 +7,6 @@ import jdk.incubator.foreign.SymbolLookup;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
-import java.util.concurrent.Callable;
 
 public final class Ipasir {
 

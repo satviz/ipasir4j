@@ -1,15 +1,18 @@
 package edu.kit.ipasir4j;
 
+import edu.kit.ipasir4j.callback.DataRegistry;
+import edu.kit.ipasir4j.callback.LearnCallbackMarker;
+import edu.kit.ipasir4j.callback.SolverData;
+import edu.kit.ipasir4j.callback.TerminateCallbackMarker;
 import jdk.incubator.foreign.CLinker;
 import jdk.incubator.foreign.FunctionDescriptor;
 import jdk.incubator.foreign.MemoryAddress;
+import jdk.incubator.foreign.ResourceScope;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.NoSuchElementException;
-import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 
 public final class Solver implements AutoCloseable {
 
@@ -54,10 +57,19 @@ public final class Solver implements AutoCloseable {
             MethodType.methodType(void.class, MemoryAddress.class, MemoryAddress.class, int.class, MemoryAddress.class),
             FunctionDescriptor.ofVoid(CLinker.C_POINTER, CLinker.C_POINTER, CLinker.C_INT, CLinker.C_POINTER));
 
-    // callback handles for upcalls
-    // TODO: 29/11/2021  
+    // callback types for upcalls
+    private static final MethodType TERMINATE_UPCALL_TYPE
+            = MethodType.methodType(int.class, MemoryAddress.class);
 
+    private static final MethodType LEARN_UPCALL_TYPE
+            = MethodType.methodType(void.class, MemoryAddress.class, MemoryAddress.class);
+
+    // pointer to the solver object
     private final MemoryAddress pointer;
+
+    // scopes used to manage callback function pointers
+    private ResourceScope terminateFunctionScope;
+    private ResourceScope learnFunctionScope;
 
     public Solver(MemoryAddress pointer) {
         this.pointer = pointer;
@@ -83,13 +95,65 @@ public final class Solver implements AutoCloseable {
         return (int) Ipasir.invokeIpasir(FAILED, pointer, lit) != 0;
     }
 
-    public <T extends SolverData> void setTerminate(T data, Predicate<? super T> terminate) {
-        // TODO: 29/11/2021
+    public void setTerminate(MemoryAddress data, MethodHandle callback) {
+        overrideTerminateScope();
+        var callbackPointer = CLinker.getInstance().upcallStub(
+                callback, FunctionDescriptor.of(CLinker.C_INT, CLinker.C_POINTER), terminateFunctionScope);
+        Ipasir.invokeIpasir(SET_TERMINATE, pointer, data, callbackPointer);
+    }
+
+    public void setLearn(MemoryAddress data, int maxLength, MethodHandle callback) {
+        overrideLearnScope();
+        var callbackPointer = CLinker.getInstance().upcallStub(
+                callback, FunctionDescriptor.ofVoid(CLinker.C_POINTER, CLinker.C_POINTER), learnFunctionScope);
+        Ipasir.invokeIpasir(SET_LEARN, pointer, data, maxLength, callbackPointer);
+    }
+
+    private void overrideTerminateScope() {
+        if (terminateFunctionScope != null) {
+            terminateFunctionScope.close();
+        }
+        terminateFunctionScope = ResourceScope.newConfinedScope();
+    }
+
+    private void overrideLearnScope() {
+        if (learnFunctionScope != null) {
+            learnFunctionScope.close();
+        }
+        learnFunctionScope = ResourceScope.newConfinedScope();
+    }
+
+    public <T extends TerminateCallbackMarker, D extends SolverData> void setTerminate(
+            D data, Class<T> callback
+    ) {
+        DataRegistry.put(data);
+        setTerminate(data.getAddress(), findCallbackHandle(callback, TERMINATE_UPCALL_TYPE));
+    }
+
+    public <T extends LearnCallbackMarker, D extends SolverData> void setLearn(
+            D data, int maxLength, Class<T> callback
+    ) {
+        DataRegistry.put(data);
+        setLearn(data.getAddress(), maxLength, findCallbackHandle(callback, LEARN_UPCALL_TYPE));
+    }
+
+    private MethodHandle findCallbackHandle(Class<?> callbackType, MethodType type) {
+        try {
+            return MethodHandles.publicLookup().findStatic(callbackType, "callback", type);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(callbackType
+                    + " is not a proper callback type. Use @IpasirCallback to generate one.", e);
+        }
+    }
+
+    // these two functions could be realised with runtime class generation. Maybe some time in the future.
+    /*public <T extends SolverData> void setTerminate(T data, Predicate<? super T> terminate) {
+
     }
 
     public <T extends SolverData> void setLearn(T data, int maxLength, BiConsumer<? super T, int[]> learn) {
-        // TODO: 29/11/2021  
-    }
+
+    }*/
 
     public void release() {
         Ipasir.invokeIpasir(RELEASE, pointer);
@@ -98,6 +162,8 @@ public final class Solver implements AutoCloseable {
     @Override
     public void close() {
         release();
+        terminateFunctionScope.close();
+        learnFunctionScope.close();
     }
 
     public enum Result {
