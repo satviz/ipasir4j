@@ -39,7 +39,11 @@ public final class Ipasir {
      * @return the solver signature.
      */
     public static String signature() {
-        return CLinker.toJavaString((MemoryAddress) invokeIpasir(SIGNATURE));
+        try {
+            return CLinker.toJavaString((MemoryAddress) SIGNATURE.invokeExact());
+        } catch (Throwable e) {
+            throw new IpasirInvocationException(e);
+        }
     }
 
     /**
@@ -48,7 +52,11 @@ public final class Ipasir {
      * @return a {@link Solver} object encapsulating the solver pointer returned by the ipasir implementation.
      */
     public static Solver init() {
-        return new Solver((MemoryAddress) invokeIpasir(INIT));
+        try {
+            return new Solver((MemoryAddress) INIT.invokeExact());
+        } catch (Throwable e) {
+            throw new IpasirInvocationException(e);
+        }
     }
 
     static MethodHandle lookupFunction(String name, MethodType methodType, FunctionDescriptor descriptor) {
@@ -56,14 +64,6 @@ public final class Ipasir {
         var address = SymbolLookup.loaderLookup().lookup(fullName)
                 .orElseThrow(() -> new IpasirNotFoundException(fullName));
         return CLinker.getInstance().downcallHandle(address, methodType, descriptor);
-    }
-
-    static Object invokeIpasir(MethodHandle handle, Object... args) {
-        try {
-            return handle.invokeExact(args);
-        } catch (Throwable e) {
-            throw new RuntimeException("Error while invoking an ipasir function (" + handle + ")", e);
-        }
     }
 
 }

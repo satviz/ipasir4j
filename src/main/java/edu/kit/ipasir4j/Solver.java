@@ -1,9 +1,5 @@
 package edu.kit.ipasir4j;
 
-import edu.kit.ipasir4j.callback.DataRegistry;
-import edu.kit.ipasir4j.callback.LearnCallbackMarker;
-import edu.kit.ipasir4j.callback.SolverData;
-import edu.kit.ipasir4j.callback.TerminateCallbackMarker;
 import jdk.incubator.foreign.CLinker;
 import jdk.incubator.foreign.FunctionDescriptor;
 import jdk.incubator.foreign.MemoryAddress;
@@ -66,12 +62,16 @@ public final class Solver implements AutoCloseable {
             MethodType.methodType(void.class, MemoryAddress.class, MemoryAddress.class, int.class, MemoryAddress.class),
             FunctionDescriptor.ofVoid(CLinker.C_POINTER, CLinker.C_POINTER, CLinker.C_INT, CLinker.C_POINTER));
 
-    // callback types for upcalls
-    private static final MethodType TERMINATE_UPCALL_TYPE
-            = MethodType.methodType(int.class, MemoryAddress.class);
+    // handles for upcalls
+    private static final MethodHandle TERMINATE_UPCALL_HANDLE
+            = findVirtual(SolverTerminateCallback.class,
+            "onTerminateQuestion",
+            MethodType.methodType(int.class, MemoryAddress.class));
 
-    private static final MethodType LEARN_UPCALL_TYPE
-            = MethodType.methodType(void.class, MemoryAddress.class, MemoryAddress.class);
+    private static final MethodHandle LEARN_UPCALL_HANDLE
+            = findVirtual(SolverLearnCallback.class,
+            "onClauseLearn",
+            MethodType.methodType(void.class, MemoryAddress.class, MemoryAddress.class));
 
     // pointer to the solver object
     private final MemoryAddress pointer;
@@ -90,38 +90,80 @@ public final class Solver implements AutoCloseable {
         this.pointer = pointer;
     }
 
+    private static MethodHandle findVirtual(Class<?> c, String name, MethodType type) {
+        try {
+            return MethodHandles.publicLookup().findVirtual(c, name, type);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new AssertionError("Could not find virtual method", e);
+        }
+    }
+
     public void add(int litOrZero) {
-        Ipasir.invokeIpasir(ADD, pointer, litOrZero);
+        try {
+            ADD.invokeExact(pointer, litOrZero);
+        } catch (Throwable e) {
+            throw new IpasirInvocationException(e);
+        }
     }
 
     public void assume(int lit) {
-        Ipasir.invokeIpasir(ASSUME, pointer, lit);
+        try {
+            ASSUME.invokeExact(pointer, lit);
+        } catch (Throwable e) {
+            throw new IpasirInvocationException(e);
+        }
     }
 
     public Result solve() {
-        return Result.getByRepresentative((int) Ipasir.invokeIpasir(SOLVE, pointer));
+        try {
+            return Result.getByRepresentative((int) SOLVE.invokeExact(pointer));
+        } catch (Throwable e) {
+            throw new IpasirInvocationException(e);
+        }
     }
 
     public int val(int lit) {
-        return (int) Ipasir.invokeIpasir(VAL, pointer, lit);
+        try {
+            return (int) VAL.invokeExact(pointer, lit);
+        } catch (Throwable e) {
+            throw new IpasirInvocationException(e);
+        }
     }
 
     public boolean failed(int lit) {
-        return (int) Ipasir.invokeIpasir(FAILED, pointer, lit) != 0;
+        try {
+            return (int) FAILED.invokeExact(pointer, lit) != 0;
+        } catch (Throwable e) {
+            throw new IpasirInvocationException(e);
+        }
     }
 
-    public void setTerminate(MemoryAddress data, MethodHandle callback) {
+    public void setTerminate(MemoryAddress data, SolverTerminateCallback callback) {
         overrideTerminateScope();
         var callbackPointer = CLinker.getInstance().upcallStub(
-                callback, FunctionDescriptor.of(CLinker.C_INT, CLinker.C_POINTER), terminateFunctionScope);
-        Ipasir.invokeIpasir(SET_TERMINATE, pointer, data, callbackPointer);
+                TERMINATE_UPCALL_HANDLE.bindTo(callback),
+                FunctionDescriptor.of(CLinker.C_INT, CLinker.C_POINTER),
+                terminateFunctionScope
+        );
+        try {
+            SET_TERMINATE.invokeExact(pointer, data, callbackPointer);
+        } catch (Throwable e) {
+            throw new IpasirInvocationException(e);
+        }
     }
 
-    public void setLearn(MemoryAddress data, int maxLength, MethodHandle callback) {
+    public void setLearn(MemoryAddress data, int maxLength, SolverLearnCallback callback) {
         overrideLearnScope();
         var callbackPointer = CLinker.getInstance().upcallStub(
-                callback, FunctionDescriptor.ofVoid(CLinker.C_POINTER, CLinker.C_POINTER), learnFunctionScope);
-        Ipasir.invokeIpasir(SET_LEARN, pointer, data, maxLength, callbackPointer);
+                LEARN_UPCALL_HANDLE.bindTo(callback),
+                FunctionDescriptor.ofVoid(CLinker.C_POINTER, CLinker.C_POINTER),
+                learnFunctionScope
+        );
+        try {
+            SET_LEARN.invokeExact(pointer, data, maxLength, callbackPointer);
+        } catch (Throwable e) {
+            throw new IpasirInvocationException(e);
+        }
     }
 
     private void overrideTerminateScope() {
@@ -138,40 +180,12 @@ public final class Solver implements AutoCloseable {
         learnFunctionScope = ResourceScope.newConfinedScope();
     }
 
-    public <T extends TerminateCallbackMarker, D extends SolverData> void setTerminate(
-            D data, Class<T> callback
-    ) {
-        DataRegistry.put(data);
-        setTerminate(data.getAddress(), findCallbackHandle(callback, TERMINATE_UPCALL_TYPE));
-    }
-
-    public <T extends LearnCallbackMarker, D extends SolverData> void setLearn(
-            D data, int maxLength, Class<T> callback
-    ) {
-        DataRegistry.put(data);
-        setLearn(data.getAddress(), maxLength, findCallbackHandle(callback, LEARN_UPCALL_TYPE));
-    }
-
-    private MethodHandle findCallbackHandle(Class<?> callbackType, MethodType type) {
-        try {
-            return MethodHandles.publicLookup().findStatic(callbackType, "callback", type);
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            throw new RuntimeException(callbackType
-                    + " is not a proper callback type. Use @IpasirCallback to generate one.", e);
-        }
-    }
-
-    // these two functions could be realised with runtime class generation. Maybe some time in the future.
-    /*public <T extends SolverData> void setTerminate(T data, Predicate<? super T> terminate) {
-
-    }
-
-    public <T extends SolverData> void setLearn(T data, int maxLength, BiConsumer<? super T, int[]> learn) {
-
-    }*/
-
     public void release() {
-        Ipasir.invokeIpasir(RELEASE, pointer);
+        try {
+            RELEASE.invokeExact(pointer);
+        } catch (Throwable e) {
+            throw new IpasirInvocationException(e);
+        }
     }
 
     @Override
