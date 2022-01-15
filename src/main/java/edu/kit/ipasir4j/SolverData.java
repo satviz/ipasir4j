@@ -1,6 +1,6 @@
 package edu.kit.ipasir4j;
 
-import edu.kit.ipasir4j.callback.DataRegistry;
+import jdk.incubator.foreign.CLinker;
 import jdk.incubator.foreign.MemoryAddress;
 
 public abstract class SolverData implements AutoCloseable {
@@ -17,6 +17,6 @@ public abstract class SolverData implements AutoCloseable {
 
     @Override
     public void close() {
-        DataRegistry.remove(address);
+        CLinker.freeMemory(address);
     }
 }
