@@ -1,6 +1,7 @@
 plugins {
     `java-library`
     `maven-publish`
+    checkstyle
 }
 
 group = "edu.kit.satviz"
@@ -33,6 +34,11 @@ tasks {
         from(sourceSets[SourceSet.MAIN_SOURCE_SET_NAME].allSource)
         archiveClassifier.set("sources")
     }
+}
+
+checkstyle {
+    configFile = configDirectory.file("google_checks.xml").get().asFile
+    toolVersion = "9.2.1"
 }
 
 val javadocJar = tasks.getByName("javadocJar")
