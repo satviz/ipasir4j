@@ -15,8 +15,32 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.2")
 }
 
-tasks.getByName<Test>("test") {
-    useJUnitPlatform()
+tasks {
+    getByName<Test>("test") {
+        useJUnitPlatform()
+    }
+
+    val javadoc = getByName<Javadoc>("javadoc")
+
+    register<Jar>("javadocJar") {
+        dependsOn.add(javadoc)
+        from(javadoc.destinationDir)
+        archiveClassifier.set("javadoc")
+    }
+
+    register<Jar>("sourcesJar") {
+        dependsOn.add("classes")
+        from(sourceSets[SourceSet.MAIN_SOURCE_SET_NAME].allSource)
+        archiveClassifier.set("sources")
+    }
+}
+
+val javadocJar = tasks.getByName("javadocJar")
+val sourcesJar = tasks.getByName("sourcesJar")
+
+artifacts {
+    archives(javadocJar)
+    archives(sourcesJar)
 }
 
 val devcordUsername: String by project
@@ -41,6 +65,9 @@ publishing {
 
     publications {
         create<MavenPublication>("maven") {
+            artifact(javadocJar)
+            artifact(sourcesJar)
+
             groupId = project.group.toString()
             artifactId = project.name
             version = project.version.toString()
