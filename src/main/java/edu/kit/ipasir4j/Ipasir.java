@@ -1,19 +1,19 @@
 package edu.kit.ipasir4j;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 import jdk.incubator.foreign.CLinker;
 import jdk.incubator.foreign.FunctionDescriptor;
 import jdk.incubator.foreign.MemoryAddress;
 import jdk.incubator.foreign.SymbolLookup;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
-
 /**
  * Entrypoint for interfacing with Ipasir.
  *
- * <strong>IMPORTANT!</strong> Before this class can be used or even loaded in any way,
+ * <p><strong>IMPORTANT!</strong> Before this class can be used or even loaded in any way,
  * an ipasir implementation must be loaded using {@link System#load(String)} or
  * {@link System#loadLibrary(String)}.
+ *
  * @see #init()
  */
 public final class Ipasir {
@@ -50,7 +50,8 @@ public final class Ipasir {
   /**
    * Call ipasir_init.
    *
-   * @return a {@link Solver} object encapsulating the solver pointer returned by the ipasir implementation.
+   * @return a {@link Solver} object encapsulating the solver pointer
+   *         returned by the ipasir implementation.
    */
   public static Solver init() {
     try {
@@ -60,7 +61,9 @@ public final class Ipasir {
     }
   }
 
-  static MethodHandle lookupFunction(String name, MethodType methodType, FunctionDescriptor descriptor) {
+  static MethodHandle lookupFunction(
+      String name, MethodType methodType, FunctionDescriptor descriptor
+  ) {
     String fullName = PREFIX + name;
     var address = SymbolLookup.loaderLookup().lookup(fullName)
         .orElseThrow(() -> new IpasirNotFoundException(fullName));
