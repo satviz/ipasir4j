@@ -19,6 +19,11 @@ public abstract class SolverData implements AutoCloseable {
 
   private final MemoryAddress address;
 
+  /**
+   * Encapsulate the given address in this object.
+   *
+   * @param address The pointer to the actual solver data.
+   */
   protected SolverData(MemoryAddress address) {
     this.address = address;
   }
