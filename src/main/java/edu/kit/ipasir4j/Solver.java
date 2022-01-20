@@ -11,13 +11,21 @@ import java.lang.invoke.MethodType;
 import java.util.NoSuchElementException;
 
 /**
- * A class representing an ipasir solver object.
- *
+ * A class representing an ipasir solver object.<br>
  * It gives access to all ipasir functions that can be called on a solver.
  *
- * <strong>IMPORTANT!</strong> Before this class can be used or even loaded in any way,
+ * <p>Objects of this class must be explicitly closed to release all associated resources. It is
+ * recommended to call {@link #close()} or use objects of this class in a {@code try-with-resources}
+ * statement.
+ *
+ * <p>The API of this class mostly delegates to the ipasir API only. For proper explanations of the
+ * functions provided here, you should read
+ * <a href="https://github.com/biotomas/ipasir/blob/master/ipasir.h">the ipasir documentation</a>.
+ *
+ * <p><strong>IMPORTANT!</strong> Before this class can be used or even loaded in any way,
  * an ipasir implementation must be loaded using {@link System#load(String)} or
  * {@link System#loadLibrary(String)}.
+ *
  * @see Ipasir#init()
  */
 public final class Solver implements AutoCloseable {
@@ -99,6 +107,11 @@ public final class Solver implements AutoCloseable {
     }
   }
 
+  /**
+   * Call {@code ipasir_add} on this solver.
+   *
+   * @param litOrZero A variable literal (-n or +n) or 0 to mark the end of the clause.
+   */
   public void add(int litOrZero) {
     try {
       ADD.invokeExact(pointer, litOrZero);
@@ -107,6 +120,11 @@ public final class Solver implements AutoCloseable {
     }
   }
 
+  /**
+   * Call {@code ipasir_assume} in this solver.
+   *
+   * @param lit A variable literal.
+   */
   public void assume(int lit) {
     try {
       ASSUME.invokeExact(pointer, lit);
@@ -115,6 +133,11 @@ public final class Solver implements AutoCloseable {
     }
   }
 
+  /**
+   * Call {@code ipasir_solve} on this solver.
+   *
+   * @return A {@link Result} object that represents the result of the solving process.
+   */
   public Result solve() {
     try {
       return Result.getByRepresentative((int) SOLVE.invokeExact(pointer));
@@ -123,6 +146,12 @@ public final class Solver implements AutoCloseable {
     }
   }
 
+  /**
+   * Call {@code ipasir_val} on this solver.
+   *
+   * @param lit The literal to obtain a value for.
+   * @return The truth value of the literal after solving.
+   */
   public int val(int lit) {
     try {
       return (int) VAL.invokeExact(pointer, lit);
@@ -131,6 +160,12 @@ public final class Solver implements AutoCloseable {
     }
   }
 
+  /**
+   * Call {@code ipasir_failed} on this solver.
+   *
+   * @param lit The literal for which to check whether it was used to prove unsatisfiability.
+   * @return {@code true} for 1, {@code false} for 0.
+   */
   public boolean failed(int lit) {
     try {
       return (int) FAILED.invokeExact(pointer, lit) != 0;
@@ -139,6 +174,13 @@ public final class Solver implements AutoCloseable {
     }
   }
 
+  /**
+   * Call {@code ipasir_set_terminate} on this solver.
+   *
+   * @param data A pointer to solver data that will be passed to the callback on each call.
+   * @param callback The terminate callback.
+   * @see AbstractTerminateCallback
+   */
   public void setTerminate(MemoryAddress data, SolverTerminateCallback callback) {
     overrideTerminateScope();
     var callbackPointer = CLinker.getInstance().upcallStub(
@@ -153,6 +195,13 @@ public final class Solver implements AutoCloseable {
     }
   }
 
+  /**
+   * Call {@code ipasir_set_learn} on this solver.
+   *
+   * @param data A pointer to solver data that will be passed to the callback on each call.
+   * @param maxLength The maximum length of clauses passed to the callback.
+   * @param callback The learn callback.
+   */
   public void setLearn(MemoryAddress data, int maxLength, SolverLearnCallback callback) {
     overrideLearnScope();
     var callbackPointer = CLinker.getInstance().upcallStub(
@@ -181,6 +230,11 @@ public final class Solver implements AutoCloseable {
     learnFunctionScope = ResourceScope.newConfinedScope();
   }
 
+  /**
+   * Call {@code ipasir_release} on this solver.
+   *
+   * @see #close()
+   */
   public void release() {
     try {
       RELEASE.invokeExact(pointer);
@@ -189,6 +243,11 @@ public final class Solver implements AutoCloseable {
     }
   }
 
+  /**
+   * Frees the resources associated with this solver, including the solver itself and possibly
+   * callback function pointers.<br>
+   * The solver cannot be used anymore after a call to {@code close()}.
+   */
   @Override
   public void close() {
     release();
@@ -196,9 +255,23 @@ public final class Solver implements AutoCloseable {
     learnFunctionScope.close();
   }
 
+  /**
+   * A Java representation of the possible ipasir solver results.
+   */
   public enum Result {
+    /**
+     * When the solver was interrupted. Corresponds to result value 0 in ipasir.
+     */
     INTERRUPTED(0),
+
+    /**
+     * When the formula was found to be satisfiable. Corresponds to result value 10 in ipasir.
+     */
     SATISFIABLE(10),
+
+    /**
+     * When the formula was found to be unsatisfiable. Corresponds to result value 20 in ipasir.
+     */
     UNSATISFIABLE(20);
 
     private final int repr;
@@ -207,10 +280,22 @@ public final class Solver implements AutoCloseable {
       this.repr = repr;
     }
 
+    /**
+     * Returns the ipasir result value corresponding to this result.
+     *
+     * @return 0, 10 or 20.
+     */
     public int getRepresentative() {
       return repr;
     }
 
+    /**
+     * Gets the {@code Result} enum constant corresponding to the given ipasir result value.
+     *
+     * @param repr An ipasir result value: 0, 10 or 20.
+     * @return The {@code Result} constant
+     * @throws NoSuchElementException If the input is not a valid ipasir result value.
+     */
     public static Result getByRepresentative(int repr) {
       return switch (repr) {
         case 0 -> INTERRUPTED;
