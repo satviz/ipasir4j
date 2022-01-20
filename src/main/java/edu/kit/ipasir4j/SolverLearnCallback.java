@@ -4,6 +4,6 @@ import jdk.incubator.foreign.MemoryAddress;
 
 public interface SolverLearnCallback {
 
-    void onClauseLearn(MemoryAddress data, MemoryAddress clause);
+  void onClauseLearn(MemoryAddress data, MemoryAddress clause);
 
 }

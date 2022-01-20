@@ -1,7 +1,7 @@
 module edu.kit.ipasir4j {
 
-    requires transitive jdk.incubator.foreign;
+  requires transitive jdk.incubator.foreign;
 
-    exports edu.kit.ipasir4j;
+  exports edu.kit.ipasir4j;
 
 }

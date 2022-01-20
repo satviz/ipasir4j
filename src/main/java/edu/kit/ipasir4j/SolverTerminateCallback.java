@@ -4,6 +4,6 @@ import jdk.incubator.foreign.MemoryAddress;
 
 public interface SolverTerminateCallback {
 
-    int onTerminateQuestion(MemoryAddress data);
+  int onTerminateQuestion(MemoryAddress data);
 
 }
