@@ -1,14 +1,13 @@
 package edu.kit.ipasir4j;
 
-import jdk.incubator.foreign.CLinker;
-import jdk.incubator.foreign.FunctionDescriptor;
-import jdk.incubator.foreign.MemoryAddress;
-import jdk.incubator.foreign.ResourceScope;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.NoSuchElementException;
+import jdk.incubator.foreign.CLinker;
+import jdk.incubator.foreign.FunctionDescriptor;
+import jdk.incubator.foreign.MemoryAddress;
+import jdk.incubator.foreign.ResourceScope;
 
 /**
  * A class representing an ipasir solver object.<br>
@@ -63,13 +62,16 @@ public final class Solver implements AutoCloseable {
 
   private static final MethodHandle SET_TERMINATE
       = Ipasir.lookupFunction("set_terminate",
-      MethodType.methodType(void.class, MemoryAddress.class, MemoryAddress.class, MemoryAddress.class),
+      MethodType.methodType(void.class, MemoryAddress.class,
+          MemoryAddress.class, MemoryAddress.class),
       FunctionDescriptor.ofVoid(CLinker.C_POINTER, CLinker.C_POINTER, CLinker.C_POINTER));
 
   private static final MethodHandle SET_LEARN
       = Ipasir.lookupFunction("set_learn",
-      MethodType.methodType(void.class, MemoryAddress.class, MemoryAddress.class, int.class, MemoryAddress.class),
-      FunctionDescriptor.ofVoid(CLinker.C_POINTER, CLinker.C_POINTER, CLinker.C_INT, CLinker.C_POINTER));
+      MethodType.methodType(void.class, MemoryAddress.class,
+          MemoryAddress.class, int.class, MemoryAddress.class),
+      FunctionDescriptor.ofVoid(CLinker.C_POINTER, CLinker.C_POINTER,
+          CLinker.C_INT, CLinker.C_POINTER));
 
   // handles for upcalls
   private static final MethodHandle TERMINATE_UPCALL_HANDLE
@@ -92,7 +94,8 @@ public final class Solver implements AutoCloseable {
   /**
    * Create a new solver based on the given solver pointer.
    *
-   * @param pointer The address of the underlying solver. The value at the address must be a valid solver.
+   * @param pointer The address of the underlying solver.
+   *                The value at the address must be a valid ipasir solver.
    * @see Ipasir#init()
    */
   public Solver(MemoryAddress pointer) {
