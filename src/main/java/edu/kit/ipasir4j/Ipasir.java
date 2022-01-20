@@ -11,8 +11,9 @@ import java.lang.invoke.MethodType;
 /**
  * Entrypoint for interfacing with Ipasir.
  *
- * @apiNote <strong>IMPORTANT!</strong> Before this class can be used or even loaded in any way,
- * an ipasir implementation must be loaded using {@link System#load(String)} or {@link System#loadLibrary(String)}.
+ * <strong>IMPORTANT!</strong> Before this class can be used or even loaded in any way,
+ * an ipasir implementation must be loaded using {@link System#load(String)} or
+ * {@link System#loadLibrary(String)}.
  * @see #init()
  */
 public final class Ipasir {

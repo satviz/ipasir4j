@@ -15,8 +15,9 @@ import java.util.NoSuchElementException;
  *
  * It gives access to all ipasir functions that can be called on a solver.
  *
- * @apiNote <strong>IMPORTANT!</strong> Before this class can be used or even loaded in any way,
- * an ipasir implementation must be loaded using {@link System#load(String)} or {@link System#loadLibrary(String)}.
+ * <strong>IMPORTANT!</strong> Before this class can be used or even loaded in any way,
+ * an ipasir implementation must be loaded using {@link System#load(String)} or
+ * {@link System#loadLibrary(String)}.
  * @see Ipasir#init()
  */
 public final class Solver implements AutoCloseable {
