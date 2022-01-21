@@ -38,12 +38,12 @@ public final class Solver implements AutoCloseable {
   private static final MethodHandle ADD
       = Ipasir.lookupFunction("add",
       MethodType.methodType(void.class, MemoryAddress.class, int.class),
-      FunctionDescriptor.ofVoid(CLinker.C_POINTER, CTypes.INT_32));
+      FunctionDescriptor.ofVoid(CLinker.C_POINTER, CLinker.C_INT));
 
   private static final MethodHandle ASSUME
       = Ipasir.lookupFunction("assume",
       MethodType.methodType(void.class, MemoryAddress.class, int.class),
-      FunctionDescriptor.ofVoid(CLinker.C_POINTER, CTypes.INT_32));
+      FunctionDescriptor.ofVoid(CLinker.C_POINTER, CLinker.C_INT));
 
   private static final MethodHandle SOLVE
       = Ipasir.lookupFunction("solve",
@@ -53,12 +53,12 @@ public final class Solver implements AutoCloseable {
   private static final MethodHandle VAL
       = Ipasir.lookupFunction("val",
       MethodType.methodType(int.class, MemoryAddress.class, int.class),
-      FunctionDescriptor.of(CTypes.INT_32, CLinker.C_POINTER, CTypes.INT_32));
+      FunctionDescriptor.of(CLinker.C_INT, CLinker.C_POINTER, CLinker.C_INT));
 
   private static final MethodHandle FAILED
       = Ipasir.lookupFunction("failed",
       MethodType.methodType(int.class, MemoryAddress.class, int.class),
-      FunctionDescriptor.of(CLinker.C_INT, CLinker.C_POINTER, CTypes.INT_32));
+      FunctionDescriptor.of(CLinker.C_INT, CLinker.C_POINTER, CLinker.C_INT));
 
   private static final MethodHandle SET_TERMINATE
       = Ipasir.lookupFunction("set_terminate",
