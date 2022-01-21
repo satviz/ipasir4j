@@ -19,6 +19,11 @@ dependencies {
 tasks {
     getByName<Test>("test") {
         useJUnitPlatform()
+        jvmArgs = listOf("--add-modules", "jdk.incubator.foreign", "--enable-native-access=ALL-UNNAMED")
+        doFirst {
+            this as Test
+            println(this.jvmArgs)
+        }
     }
 
     val javadoc = getByName<Javadoc>("javadoc")
@@ -35,6 +40,13 @@ tasks {
         archiveClassifier.set("sources")
     }
 }
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+
 
 checkstyle {
     configFile = configDirectory.file("google_checks.xml").get().asFile
