@@ -17,13 +17,14 @@ dependencies {
 }
 
 tasks {
+
+    getByName<JavaCompile>("compileTestJava") {
+        options.compilerArgs = listOf("--add-modules", "jdk.incubator.foreign")
+    }
+
     getByName<Test>("test") {
         useJUnitPlatform()
         jvmArgs = listOf("--add-modules", "jdk.incubator.foreign", "--enable-native-access=ALL-UNNAMED")
-        doFirst {
-            this as Test
-            println(this.jvmArgs)
-        }
     }
 
     val javadoc = getByName<Javadoc>("javadoc")
