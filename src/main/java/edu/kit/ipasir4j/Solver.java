@@ -254,8 +254,12 @@ public final class Solver implements AutoCloseable {
   @Override
   public void close() {
     release();
-    terminateFunctionScope.close();
-    learnFunctionScope.close();
+    if (terminateFunctionScope != null) {
+      terminateFunctionScope.close();
+    }
+    if (learnFunctionScope != null) {
+      learnFunctionScope.close();
+    }
   }
 
   /**
