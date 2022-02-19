@@ -25,6 +25,8 @@ import jdk.incubator.foreign.ResourceScope;
  * an ipasir implementation must be loaded using {@link System#load(String)} or
  * {@link System#loadLibrary(String)}.
  *
+ * <p>This class is not thread safe.
+ *
  * @see Ipasir#init()
  */
 public final class Solver implements AutoCloseable {
@@ -223,14 +225,14 @@ public final class Solver implements AutoCloseable {
     if (terminateFunctionScope != null) {
       terminateFunctionScope.close();
     }
-    terminateFunctionScope = ResourceScope.newConfinedScope();
+    terminateFunctionScope = ResourceScope.newSharedScope();
   }
 
   private void overrideLearnScope() {
     if (learnFunctionScope != null) {
       learnFunctionScope.close();
     }
-    learnFunctionScope = ResourceScope.newConfinedScope();
+    learnFunctionScope = ResourceScope.newSharedScope();
   }
 
   /**

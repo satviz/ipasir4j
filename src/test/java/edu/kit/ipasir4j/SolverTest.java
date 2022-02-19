@@ -37,7 +37,6 @@ class SolverTest {
   @Test
   void testRun_satisfiable() {
     IntStream.of(1, 2, 3, 0, 1, 2, -3, 0, -1, 3, 0, -2, -3, 0).forEach(solver::add);
-    solver.setLearn(MemoryAddress.NULL, 10, (data, clause) -> System.out.println("CLAUSE"));
     var result = solver.solve();
     assertEquals(Solver.Result.SATISFIABLE, result);
     var assignments = IntStream.range(1, 6)
