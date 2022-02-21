@@ -1,5 +1,8 @@
 package edu.kit.ipasir4j;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
 import jdk.incubator.foreign.CLinker;
 import jdk.incubator.foreign.MemoryAccess;
 import jdk.incubator.foreign.MemoryAddress;
@@ -16,10 +19,15 @@ public abstract class AbstractLearnCallback<T extends SolverData>
 
   @Override
   public final void onClauseLearn(MemoryAddress dataAddr, MemoryAddress clauseAddr) {
-    int[] clause = MemorySegment.globalNativeSegment().asSlice(clauseAddr)
+    MemorySegment clauseSegment = MemorySegment.globalNativeSegment().asSlice(clauseAddr);
+    int length = 0;
+    long intSize = CLinker.C_INT.byteSize();
+    while (MemoryAccess.getIntAtOffset(clauseSegment, length) != 0) {
+      length += intSize;
+    }
+    int[] clause = clauseSegment.asSlice(0, length)
         .elements(CLinker.C_INT)
         .mapToInt(MemoryAccess::getInt)
-        .takeWhile(i -> i != 0)
         .toArray();
     T data = dataFrom(dataAddr);
     onClauseLearn(data, clause);
