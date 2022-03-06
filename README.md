@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    implementation("edu.kit:ipasir4j:0.1.0")
+    implementation("edu.kit:ipasir4j:0.1.2")
 }
 ```
 
@@ -30,7 +30,7 @@ Maven:
     <dependency>
         <groupId>edu.kit</groupId>
         <artifactId>ipasir4j</artifactId>
-        <version>0.1.0</version>
+        <version>0.1.2</version>
     </dependency>
 </dependencies>
 ```
